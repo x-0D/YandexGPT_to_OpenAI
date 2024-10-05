@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Depends, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -15,6 +16,23 @@ from utils.misc import get_model_list, messages_translation, chat_completion_tra
 from utils.tokens import get_tokens
 
 load_dotenv()
+
+YANDEX_LITE_SYNONIMS=[
+    # GPT-3 models
+    "gpt-3.5-turbo",
+    "gpt-3.5-turbo-16k",
+    "gpt-3.5-turbo-1106",
+    "gpt-3.5-turbo-0125",
+    # GPT-4 models
+    "gpt-4",
+    "gpt-4-32k",
+    "gpt-4-1106-preview",
+    "gpt-4-0125-preview",
+    "gpt-4-turbo",
+    "gpt-4-turbo-2024-04-09"
+    "gpt-4o-mini",
+]
+YANDEX_PRO_SYNONIMS=["gpt-4o", "gpt-4o-2024-05-13"]
 
 logger = setup_logging(os.getenv('Y2O_LogFile', './logs/y2o.log'), os.getenv('Y2O_LogLevel', 'INFO').upper())
 
@@ -106,6 +124,19 @@ async def get_creds(auth: dict):
         secretkey = SECRETKEY
     return catalogid, secretkey, user_id
 
+# Allow all origins, methods, and headers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.options("/")
+@app.options("/v1")
+async def handle_options():
+    return {}
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -142,8 +173,11 @@ async def chat_completions(chat_completions: ChatCompletions, auth: dict = Depen
 async def stream_chat_completions(chat_completions: ChatCompletions, auth: dict):
     catalogid, secretkey, user_id = await get_creds(auth)
     model = chat_completions.model
-    if model in ["gpt-4o-mini", "gpt-3.5-turbo"]:
+    if model in YANDEX_LITE_SYNONIMS:
         model = "yandexgpt-lite/latest"
+    
+    if model in YANDEX_PRO_SYNONIMS:
+        model = "yandexgpt-pro/latest"
 
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {
@@ -189,6 +223,9 @@ async def non_stream_chat_completions(chat_completions: ChatCompletions, auth: d
     model = chat_completions.model
     if model in ["gpt-4o-mini", "gpt-3.5-turbo"]:
         model = "yandexgpt-lite/latest"
+
+    if model in ["gpt-4o"]:
+        model = "yandexgpt-pro/latest"
 
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {
