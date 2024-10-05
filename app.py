@@ -177,7 +177,7 @@ async def stream_chat_completions(chat_completions: ChatCompletions, auth: dict)
         model = "yandexgpt-lite/latest"
     
     if model in YANDEX_PRO_SYNONIMS:
-        model = "yandexgpt-pro/latest"
+        model = "yandexgpt/latest"
 
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {
@@ -221,11 +221,11 @@ async def stream_chat_completions(chat_completions: ChatCompletions, auth: dict)
 async def non_stream_chat_completions(chat_completions: ChatCompletions, auth: dict):
     catalogid, secretkey, user_id = await get_creds(auth)
     model = chat_completions.model
-    if model in ["gpt-4o-mini", "gpt-3.5-turbo"]:
+    if model in YANDEX_LITE_SYNONIMS:
         model = "yandexgpt-lite/latest"
-
-    if model in ["gpt-4o"]:
-        model = "yandexgpt-pro/latest"
+    
+    if model in YANDEX_PRO_SYNONIMS:
+        model = "yandexgpt/latest"
 
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     headers = {
